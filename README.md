@@ -6,7 +6,7 @@
 
 # 🎥 Sebs YT Downloader
 
-¡Un descargador de videos y listas de reproducción de YouTube con una interfaz gráfica moderna, elegante y *bien mela*! Construido en Python para hacer la vida mucho más fácil a la hora de descargar tu música o videos favoritos.
+¡Un descargador de videos y listas de reproducción de YouTube con una interfaz gráfica moderna, elegante y _bien mela_! Construido en Python para hacer la vida mucho más fácil a la hora de descargar tu música o videos favoritos.
 
 ---
 
@@ -28,7 +28,7 @@
 pip install customtkinter yt-dlp imageio-ffmpeg
 ```
 
-*(Nota: `imageio-ffmpeg` se encarga de descargar y proveer el ejecutable de FFmpeg automáticamente para este proyecto, así que no tienes que preocuparte por configurarlo a mano).*
+_(Nota: `imageio-ffmpeg` se encarga de descargar y proveer el ejecutable de FFmpeg automáticamente para este proyecto, así que no tienes que preocuparte por configurarlo a mano)._
 
 ## 🚀 Uso
 
@@ -47,15 +47,37 @@ python main.py
 ## 📦 Ejecutable (.exe)
 
 El proyecto ya está configurado para generar un ejecutable usando PyInstaller (`SebsYTDownloader.spec`). Para compilarlo tú mismo y no depender de Python:
+
+**1. Instala los requerimientos**
+```bash
+pip install -r requirements.txt
+```
+
+**2. Obtén la ruta de FFmpeg**
+Antes de compilar necesitas saber dónde está el FFmpeg que instaló `imageio-ffmpeg` en tu PC. Corre esto:
+
+```bash
+python -c "import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())"
+```
+
+**3. Compila el ejecutable**
+Reemplaza `<RUTA_FFMPEG>` con la ruta que obtuviste arriba y ejecuta:
+
+```bash
+python -m PyInstaller --onefile --windowed --name "SebsYTDownloader" --add-binary "<RUTA_FFMPEG>;imageio_ffmpeg/binaries" main.py
+```
+
+*(Opcional: Si ya tienes todo configurado o quieres usar el archivo .spec existente)*
 ```bash
 pyinstaller SebsYTDownloader.spec
 ```
+
 El `.exe` quedará en la carpeta `dist`.
 
 ## 📂 Archivos del Proyecto
 
 - `main.py`: Punto de entrada de la aplicación.
-- `ui.py`: Contiene toda la lógica de la interfaz gráfica y notificaciones del usuario. 
+- `ui.py`: Contiene toda la lógica de la interfaz gráfica y notificaciones del usuario.
 - `downloader.py`: Es el corazón de la descarga. Maneja toda la lógica de `yt-dlp`, los reintentos automáticos y el post-procesado con `FFmpeg`.
 - `test.py`: Pruebas de código u operaciones desde consola (script de testing).
 
