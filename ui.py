@@ -10,7 +10,7 @@ class App(ctk.CTk):
         super().__init__()
         self.title("YT Downloader BY sebs")
         self.geometry("700x800")
-        self.resizable(False, False)
+        self.resizable(True, True)
         self.callback_progress = None
 
         self.downloader = Downloader()
