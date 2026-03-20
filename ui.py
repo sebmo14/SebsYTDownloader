@@ -65,8 +65,11 @@ class App(ctk.CTk):
         self.label_duration.configure(text=f"Duración: {info['duration']}")
 
         formats = self.downloader.get_formats(url)
-        self.formats_list = [f["label"] for f in formats]
-        self.quality_menu.configure(values=self.formats_list)
+        self.formats_list = formats  # objetos completos
+        labels = [f["label"] for f in formats]
+        self.quality_menu.configure(values=labels)
+        if labels:
+            self.quality_menu.set(labels[0])
 
     def build_info_section(self):
         self.frame_info = ctk.CTkFrame(self)
@@ -161,9 +164,11 @@ class App(ctk.CTk):
         if fmt == "mp4":
             self.btn_mp4.configure(fg_color="#1f6aa5")
             self.btn_mp3.configure(fg_color="gray30")
+            self.quality_menu.configure(state="normal")  # 👈 mostrar
         else:
             self.btn_mp3.configure(fg_color="#1f6aa5")
             self.btn_mp4.configure(fg_color="gray30")
+            self.quality_menu.configure(state="disabled")
 
     def choose_folder(self):
         from tkinter import filedialog
@@ -201,21 +206,28 @@ class App(ctk.CTk):
         fmt = self.fmt.get()
 
         if not url:
-            self.label_status.configure(text="⚠️ Ingresa una URL")
+            self.label_status.configure(text="Ingresa una URL!")
             return
 
         if not folder:
-            self.label_status.configure(text="⚠️ Elige una carpeta")
+            self.label_status.configure(text="Elige una carpeta!")
             return
 
         # obtener el format_id seleccionado en el dropdown
         calidad_label = self.quality_menu.get()
-        format_id = fmt  # si es mp3 se queda como mp3
+        format_id = "bestvideo+bestaudio/best"  # si es mp3 se queda como mp3
 
         if fmt == "mp4":
             # buscar el format_id correspondiente al label elegido
             for f in self.formats_list:
                 if f["label"] == calidad_label:
+                    format_id = f["format_id"]
+                    break
+        if fmt == "mp3":
+            format_id = "mp3"
+        elif self.formats_list:
+            for f in self.formats_list:
+                if isinstance(f, dict) and f.get("label") == calidad_label:
                     format_id = f["format_id"]
                     break
 
@@ -245,8 +257,37 @@ class App(ctk.CTk):
 
     def _on_download_finished(self):
         self.btn_download.configure(state="normal", text="⬇ Descargar")
-        self.label_status.configure(text="✅ Descarga completada")
+        self.label_status.configure(text="Descarga completada")
         self.progress_bar.set(1)
+
+        if hasattr(self.downloader, "failed") and self.downloader.failed:
+            self.show_failed(self.downloader.failed)
+
+    def show_failed_download(self, failed):
+        if not failed:
+            return
+        ventana = ctk.CTkToplevel(self)
+
+        ventana.title("Videos que fallaron")
+        ventana.geometry("500x400")
+        ventana.grab_set()  # bloquea la ventana principal hasta cerrar esta
+
+        ctk.CTkLabel(
+            ventana,
+            text=f"⚠️ {len(failed)} video(s) no se pudieron descargar:",
+            font=ctk.CTkFont(size=14, weight="bold"),
+        ).pack(pady=(20, 10), padx=20)
+
+        # caja de texto con scroll para listar los fallos
+        textbox = ctk.CTkTextbox(ventana, width=460, height=280)
+        textbox.pack(padx=20, pady=(0, 10))
+
+        for f in failed:
+            textbox.insert("end", f"❌ {f}\n")
+
+        textbox.configure(state="disabled")  # solo lectura
+
+        ctk.CTkButton(ventana, text="Cerrar", command=ventana.destroy).pack(pady=10)
 
 
 if __name__ == "__main__":

@@ -48,13 +48,7 @@ class Downloader:
         else:
             opciones["format"] = fmt
             opciones["merge_output_format"] = "mp4"
-            opciones["postprocessors"] = [
-                {
-                    "key": "FFmpegVideoConvertor",
-                    "preferedformat": "mp4",
-                }
-            ]
-
+            opciones["postprocessor_args"] = {"merger": ["-c:v", "copy", "-c:a", "aac"]}
         try:
             with yt_dlp.YoutubeDL(opciones) as ydl:
                 ydl.download([url])
@@ -148,15 +142,21 @@ class Downloader:
 
         def error_hook(d):
             if d["status"] == "error":
-                titulo = d.get("filename", "Video desconocido")
-                self.failed.append(titulo)
-                print(f" Falló: {titulo}")
+                titulo = d.get("info_dict", {}).get(
+                    "title", d.get("filename", "Video desconocido")
+                )
+                if titulo not in self.failed:
+                    self.failed.append(titulo)
+                    print(f" Falló: {titulo}")
 
         opciones = {
             "outtmpl": f"{folder}/%(playlist_title)s/%(playlist_index)s - %(title)s.%(ext)s",
             "progress_hooks": [self.progress_hook, error_hook],
             "ffmpeg_location": ffmpeg_path,
             "ignoreerrors": True,
+            "retries": 5,
+            "fragment_retries": 10,
+            "sleep_interval": 2,
         }
 
         if end:
@@ -177,12 +177,7 @@ class Downloader:
         else:
             opciones["format"] = fmt
             opciones["merge_output_format"] = "mp4"
-            opciones["postprocessors"] = [
-                {
-                    "key": "FFmpegVideoConvertor",
-                    "preferedformat": "mp4",
-                }
-            ]
+            opciones["postprocessor_args"] = {"merger": ["-c:v", "copy", "-c:a", "aac"]}
 
         try:
             with yt_dlp.YoutubeDL(opciones) as ydl:
