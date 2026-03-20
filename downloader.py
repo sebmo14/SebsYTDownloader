@@ -14,14 +14,19 @@ class Downloader:
 
             if total > 0:
                 percent = downloaded / total
+                if self.callback_progress:
+                    self.callback_progress(percent, f"Descargando: {percent:.0%}")
                 print(f"Progreso: {percent:.0%}")
 
         elif d["status"] == "finished":
+            if self.callback_progress:
+                self.callback_progress(1, "Descarga finalizada")
             print("Descarga finalizada en la carpeta: ", self.folder)
 
     def download(self, url, folder, fmt, callback_progress=None):
         self.downloading = True
         self.folder = folder
+        self.callback_progress = callback_progress
 
         ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
 
