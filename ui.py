@@ -37,7 +37,7 @@ class App(ctk.CTk):
 
         darkmode_switch = ctk.CTkSwitch(
             self,
-            text="Dark mode",
+            text="Light mode",
             command=self.toggle_darkmode,
         )
         darkmode_switch.place(relx=0.95, rely=0.02, anchor="ne")
