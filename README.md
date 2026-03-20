@@ -12,10 +12,10 @@
 
 ## ✨ Características
 
-- 🎵 **Descargas en MP3 y MP4**: Extrae puro audio o baja el video completo con la mejor calidad.
-- 📺 **Soporte para Playlists**: Pega el link de una lista de reproducción y descárgala completica, sin enredarse.
-- 🎨 **Interfaz Moderna**: Diseño oscuro (Dark Mode) chulísimo gracias a `CustomTkinter`.
-- ⚡ **Rendimiento Óptimo**: Utiliza `yt-dlp` bajo el capó (mucho más rápido y confiable que pytube) y hace uso de `FFmpeg` para conversiones precisas.
+- 🎵 **Descargas en MP3 y MP4**: Extrae puro audio o baja el video completo con la mejor calidad disponible.
+- 📺 **Soporte robusto para Playlists**: Pega el link de una lista de reproducción y descárgala completica. Cuenta con sistema de reintentos y reporte detallado si un video falla.
+- 🎨 **Interfaz Moderna**: Diseño oscuro con acentos en verde (Dark Mode) chulísimo gracias a `CustomTkinter`.
+- ⚡ **Rendimiento Óptimo**: Utiliza `yt-dlp` bajo el capó (mucho más rápido y confiable que pytube) y hace uso de `FFmpeg` para conversiones precisas sin pérdida de calidad.
 - 📁 **Selección de Ruta**: Elige exactamente en qué carpeta guardar los archivos.
 
 ## 🛠️ Requisitos e Instalación
@@ -32,23 +32,32 @@ pip install customtkinter yt-dlp imageio-ffmpeg
 
 ## 🚀 Uso
 
-Es tan simple como correr el archivo de la interfaz:
+Es tan simple como correr el archivo principal:
 
 ```bash
-python ui.py
+python main.py
 ```
 
 1. **Pega el enlace** (link del video o playlist) en la barra principal.
 2. Presiona en **Obtener info** para ver los detalles del video/canal.
-3. Elige el **formato** (MP4 o MP3).
+3. Elige el **formato** (MP4 o MP3) y la **calidad** de video deseada si descargas en MP4.
 4. Elige tu **carpeta de destino** pinchando en "Elegir carpeta destino".
-5. ¡Descarga! (*(Asegúrate de haber habilitado el botón de descargar si lo tienes comentado en el código 😉)*)
+5. ¡Presiona **Descargar**!
+
+## 📦 Ejecutable (.exe)
+
+El proyecto ya está configurado para generar un ejecutable usando PyInstaller (`SebsYTDownloader.spec`). Para compilarlo tú mismo y no depender de Python:
+```bash
+pyinstaller SebsYTDownloader.spec
+```
+El `.exe` quedará en la carpeta `dist`.
 
 ## 📂 Archivos del Proyecto
 
-- `ui.py`: Contiene toda la lógica de la interfaz gráfica moderna. 
-- `downloader.py`: Es el corazón de la descarga, maneja toda la lógica potente de `yt-dlp` y el post-procesado con `FFmpeg`.
-- `test.py`: Pruebas de código que muestran cómo interactuar con `downloader.py` desde la consola.
+- `main.py`: Punto de entrada de la aplicación.
+- `ui.py`: Contiene toda la lógica de la interfaz gráfica y notificaciones del usuario. 
+- `downloader.py`: Es el corazón de la descarga. Maneja toda la lógica de `yt-dlp`, los reintentos automáticos y el post-procesado con `FFmpeg`.
+- `test.py`: Pruebas de código u operaciones desde consola (script de testing).
 
 ---
 
