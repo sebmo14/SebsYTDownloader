@@ -56,7 +56,24 @@ class App(ctk.CTk):
         if not url:
             return
 
+        self.btn_info.configure(state="disabled", text="Obteniendo info...")
+
+        import threading
+        hilo = threading.Thread(target=self._run_get_info, args=(url,))
+        hilo.daemon = True
+        hilo.start()
+
+    def _run_get_info(self, url):
         info = self.downloader.get_info(url)
+        formats = None
+        if info:
+            formats = self.downloader.get_formats(url)
+            
+        self.after(0, self._on_info_finished, info, formats)
+
+    def _on_info_finished(self, info, formats):
+        self.btn_info.configure(state="normal", text="Obtener info")
+
         if not info:
             return
 
@@ -64,12 +81,12 @@ class App(ctk.CTk):
         self.label_channel.configure(text=f"Canal: {info['channel']}")
         self.label_duration.configure(text=f"Duración: {info['duration']}")
 
-        formats = self.downloader.get_formats(url)
-        self.formats_list = formats  # objetos completos
-        labels = [f["label"] for f in formats]
-        self.quality_menu.configure(values=labels)
-        if labels:
-            self.quality_menu.set(labels[0])
+        if formats:
+            self.formats_list = formats  # objetos completos
+            labels = [f["label"] for f in formats]
+            self.quality_menu.configure(values=labels)
+            if labels:
+                self.quality_menu.set(labels[0])
 
     def build_info_section(self):
         self.frame_info = ctk.CTkFrame(self)
@@ -236,7 +253,7 @@ class App(ctk.CTk):
         self.label_status.configure(text="Iniciando descarga...")
         self.progress_bar.set(0)
 
-        # correr la descarga en un hilo separado
+        
         import threading
 
         hilo = threading.Thread(
@@ -246,9 +263,12 @@ class App(ctk.CTk):
         hilo.start()
 
     def _run_download(self, url, folder, format_id):
-        def callback(porcentaje, status):
+        def actualizar_ui(porcentaje, status):
             self.progress_bar.set(porcentaje)
             self.label_status.configure(text=status)
+
+        def callback(porcentaje, status):
+            self.after(0, actualizar_ui, porcentaje, status)
 
         self.downloader.download(url, folder, format_id, callback_progress=callback)
 
@@ -283,7 +303,7 @@ class App(ctk.CTk):
         textbox.pack(padx=20, pady=(0, 10))
 
         for f in failed:
-            textbox.insert("end", f"❌ {f}\n")
+            textbox.insert("end", f"FALLO: {f}\n")
 
         textbox.configure(state="disabled")  # solo lectura
 
