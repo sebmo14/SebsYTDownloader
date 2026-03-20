@@ -35,6 +35,13 @@ class App(ctk.CTk):
         )
         tittle.pack(pady=(10, 5))
 
+        darkmode_switch = ctk.CTkSwitch(
+            self,
+            text="Dark mode",
+            command=self.toggle_darkmode,
+        )
+        darkmode_switch.place(relx=0.95, rely=0.02, anchor="ne")
+
         self.url_entry = ctk.CTkEntry(
             frame,
             placeholder_text="Ponga el link del video o playlist aca, mi so",
@@ -308,7 +315,11 @@ class App(ctk.CTk):
         textbox.configure(state="disabled")  # solo lectura
 
         ctk.CTkButton(ventana, text="Cerrar", command=ventana.destroy).pack(pady=10)
-
+    def toggle_darkmode(self):
+        if ctk.get_appearance_mode() == "Dark":
+            ctk.set_appearance_mode("Light")
+        else:
+            ctk.set_appearance_mode("Dark")
 
 if __name__ == "__main__":
     app = App()
