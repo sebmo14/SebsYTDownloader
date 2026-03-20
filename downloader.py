@@ -6,6 +6,7 @@ class Downloader:
     def __init__(self):
         self.downloading = False
         self.folder = ""
+        self.callback_progress = None
 
     def progress_hook(self, d):
         if d["status"] == "downloading":
@@ -137,6 +138,7 @@ class Downloader:
         self.downloading = True
         self.folder = folder
         self.failed = []
+        self.callback_progress = callback_progress  
 
         ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
 
@@ -157,6 +159,9 @@ class Downloader:
             "retries": 5,
             "fragment_retries": 10,
             "sleep_interval": 2,
+            "continuedl": True,
+            "quiet": True,       
+            "no_warnings": True,
         }
 
         if end:

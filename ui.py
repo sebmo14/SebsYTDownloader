@@ -12,6 +12,8 @@ class App(ctk.CTk):
         self.geometry("700x800")
         self.resizable(True, True)
         self.callback_progress = None
+        self.is_playlist = False
+        self.playlist_count = 0
 
         self.downloader = Downloader()
 
@@ -88,8 +90,20 @@ class App(ctk.CTk):
         self.label_channel.configure(text=f"Canal: {info['channel']}")
         self.label_duration.configure(text=f"Duración: {info['duration']}")
 
+        # detectar playlist 
+        self.is_playlist = info["is_playlist"]
+        self.playlist_count = info["playlist_count"]
+
+        if self.is_playlist:
+            self.label_playlist_info.configure(text=f"🎵 Playlist: {self.playlist_count} videos")
+            self.entry_end.delete(0, "end")
+            self.entry_end.insert(0, str(self.playlist_count))
+            self.frame_playlist.grid()
+        else:
+            self.frame_playlist.grid_remove()
+
         if formats:
-            self.formats_list = formats  # objetos completos
+            self.formats_list = formats
             labels = [f["label"] for f in formats]
             self.quality_menu.configure(values=labels)
             if labels:
@@ -183,6 +197,29 @@ class App(ctk.CTk):
         )
         self.btn_folder.grid(row=2, column=3, padx=5, pady=10)
 
+        # --- opciones playlist ---
+        self.frame_playlist = ctk.CTkFrame(inner, fg_color="transparent")
+        self.frame_playlist.grid(row=3, column=0, columnspan=4, sticky="w", padx=10, pady=5)
+
+        self.label_playlist_info = ctk.CTkLabel(
+            self.frame_playlist,
+            text="",
+            anchor="w"
+        )
+        self.label_playlist_info.pack(side="left", padx=(0, 20))
+
+        ctk.CTkLabel(self.frame_playlist, text="Desde:").pack(side="left", padx=(0, 5))
+        self.entry_start = ctk.CTkEntry(self.frame_playlist, width=50)
+        self.entry_start.insert(0, "1")
+        self.entry_start.pack(side="left", padx=(0, 10))
+
+        ctk.CTkLabel(self.frame_playlist, text="Hasta:").pack(side="left", padx=(0, 5))
+        self.entry_end = ctk.CTkEntry(self.frame_playlist, width=50)
+        self.entry_end.pack(side="left")
+
+        # ocultar por defecto
+        self.frame_playlist.grid_remove()    
+
     def set_formato(self, fmt):
         self.fmt.set(fmt)
         if fmt == "mp4":
@@ -232,40 +269,40 @@ class App(ctk.CTk):
         if not url:
             self.label_status.configure(text="Ingresa una URL!")
             return
-
         if not folder:
             self.label_status.configure(text="Elige una carpeta!")
             return
 
-        # obtener el format_id seleccionado en el dropdown
-        calidad_label = self.quality_menu.get()
-        format_id = "bestvideo+bestaudio/best"  # si es mp3 se queda como mp3
-
-        if fmt == "mp4":
-            # buscar el format_id correspondiente al label elegido
-            for f in self.formats_list:
-                if f["label"] == calidad_label:
-                    format_id = f["format_id"]
-                    break
         if fmt == "mp3":
             format_id = "mp3"
-        elif self.formats_list:
+        else:
+            calidad_label = self.quality_menu.get()
+            format_id = "bestvideo+bestaudio/best"
             for f in self.formats_list:
-                if isinstance(f, dict) and f.get("label") == calidad_label:
+                if f.get("label") == calidad_label:
                     format_id = f["format_id"]
                     break
 
-        # deshabilitar botón mientras descarga
         self.btn_download.configure(state="disabled", text="Descargando...")
         self.label_status.configure(text="Iniciando descarga...")
         self.progress_bar.set(0)
 
-        
         import threading
 
-        hilo = threading.Thread(
-            target=self._run_download, args=(url, folder, format_id)
-        )
+        if self.is_playlist:
+            start = int(self.entry_start.get() or 1)
+            end_val = self.entry_end.get()
+            end = int(end_val) if end_val else None
+            hilo = threading.Thread(
+                target=self._run_download_playlist,
+                args=(url, folder, format_id, start, end)
+            )
+        else:
+            hilo = threading.Thread(
+                target=self._run_download,
+                args=(url, folder, format_id)
+            )
+
         hilo.daemon = True
         hilo.start()
 
@@ -282,13 +319,28 @@ class App(ctk.CTk):
         # al terminar, volver a habilitar el botón desde el hilo principal
         self.after(0, self._on_download_finished)
 
+    def _run_download_playlist(self, url, folder, format_id, start, end):
+        def actualizar_ui(porcentaje, status):
+            self.progress_bar.set(porcentaje)
+            self.label_status.configure(text=status)
+
+        def callback(porcentaje, status):
+            self.after(0, actualizar_ui, porcentaje, status)
+
+        self.downloader.download_playlist(
+            url, folder, format_id,
+            start=start, end=end,
+            callback_progress=callback
+        )
+        self.after(0, self._on_download_finished)
+    
     def _on_download_finished(self):
         self.btn_download.configure(state="normal", text="⬇ Descargar")
         self.label_status.configure(text="Descarga completada")
         self.progress_bar.set(1)
 
         if hasattr(self.downloader, "failed") and self.downloader.failed:
-            self.show_failed(self.downloader.failed)
+            self.show_failed_download(self.downloader.failed)
 
     def show_failed_download(self, failed):
         if not failed:
