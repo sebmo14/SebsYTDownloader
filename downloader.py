@@ -42,6 +42,13 @@ class Downloader:
             ]
         else:
             opciones["format"] = fmt
+            opciones["merge_output_format"] = "mp4"
+            opciones["postprocessors"] = [
+                {
+                    "key": "FFmpegVideoConvertor",
+                    "preferedformat": "mp4",
+                }
+            ]
 
         try:
             with yt_dlp.YoutubeDL(opciones) as ydl:
@@ -124,3 +131,65 @@ class Downloader:
         except Exception as e:
             print("Error obteniendo formatos:", e)
             return []
+
+    def download_playlist(
+        self, url, folder, fmt, start=1, end=None, callback_progress=None
+    ):
+        self.downloading = True
+        self.folder = folder
+        self.failed = []
+
+        ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
+
+        def error_hook(d):
+            if d["status"] == "error":
+                titulo = d.get("filename", "Video desconocido")
+                self.failed.append(titulo)
+                print(f" Falló: {titulo}")
+
+        opciones = {
+            "outtmpl": f"{folder}/%(playlist_title)s/%(playlist_index)s - %(title)s.%(ext)s",
+            "progress_hooks": [self.progress_hook, error_hook],
+            "ffmpeg_location": ffmpeg_path,
+            "ignoreerrors": True,
+        }
+
+        if end:
+            opciones["playliststart"] = start
+            opciones["playlistend"] = end
+        else:
+            opciones["playliststart"] = start
+
+        if fmt == "mp3":
+            opciones["format"] = "bestaudio/best"
+            opciones["postprocessors"] = [
+                {
+                    "key": "FFmpegExtractAudio",
+                    "preferredcodec": "mp3",
+                    "preferredquality": "192",
+                }
+            ]
+        else:
+            opciones["format"] = fmt
+            opciones["merge_output_format"] = "mp4"
+            opciones["postprocessors"] = [
+                {
+                    "key": "FFmpegVideoConvertor",
+                    "preferedformat": "mp4",
+                }
+            ]
+
+        try:
+            with yt_dlp.YoutubeDL(opciones) as ydl:
+                ydl.download([url])
+        except Exception as e:
+            print("Error:", e)
+        finally:
+            self.downloading = False
+
+        if self.failed:
+            print(f"\n {len(self.failed)} video(s) fallaron:")
+            for f in self.failed:
+                print(f"  - {f}")
+        else:
+            print("\n Todos los videos se descargaron correctamente")
