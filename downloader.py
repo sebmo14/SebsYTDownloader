@@ -8,6 +8,19 @@ class Downloader:
         self.folder = ""
         self.callback_progress = None
 
+    def format_duration(self, seconds):
+        if not seconds:
+            return "Desconocida"
+
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        secs = seconds % 60
+
+        if hours > 0:
+            return f"{hours}:{minutes:02d}:{secs:02d}"
+        else:
+            return f"{minutes}:{secs:02d}"
+
     def progress_hook(self, d):
         if d["status"] == "downloading":
             downloaded = d.get("downloaded_bytes", 0)
@@ -28,7 +41,6 @@ class Downloader:
         self.downloading = True
         self.folder = folder
         self.callback_progress = callback_progress
-
         ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
 
         opciones = {
@@ -58,7 +70,7 @@ class Downloader:
         finally:
             self.downloading = False
 
-    def get_info(self, url):
+    def get_info_formats(self, url):
         options = {
             "quiet": True,
             "skip_download": True,
@@ -66,7 +78,7 @@ class Downloader:
         try:
             with yt_dlp.YoutubeDL(options) as ydl:
                 info = ydl.extract_info(url, download=False)
-            return {
+            result = {
                 "title": info.get("title", "Sin título"),
                 "duration": self.format_duration(info.get("duration", 0)),
                 "thumbnail": info.get("thumbnail", ""),
@@ -75,62 +87,40 @@ class Downloader:
                 "playlist_count": info.get("playlist_count", 0),
             }
 
+            formats = info.get("formats", [])
+
+            alturas = set()
+            for f in formats:
+                height = f.get("height")
+                has_video = f.get("vcodec") != "none"
+                if has_video and height:
+                    alturas.add(height)
+
+            formats = []
+            for height in sorted(alturas, reverse=True):
+                formats.append(
+                    {
+                        "label": f"{height}p",
+                        "format_id": f"bestvideo[height<={height}]+bestaudio/best[height<={height}]",
+                        "height": height,
+                    }
+                )
+
+            formats.insert(
+                0,
+                {
+                    "label": "Mejor calidad",
+                    "format_id": "bestvideo+bestaudio/best",
+                    "height": 9999,
+                },
+            )
+
+            result["formats"] = formats
+            return result
+
         except Exception as e:
             print("Error al obtener información", e)
             return None
-
-    def format_duration(self, seconds):
-        if not seconds:
-            return "Desconocida"
-
-        hours = seconds // 3600
-        minutes = (seconds % 3600) // 60
-        secs = seconds % 60
-
-        if hours > 0:
-            return f"{hours}:{minutes:02d}:{secs:02d}"  # 1:23:45
-        else:
-            return f"{minutes}:{secs:02d}"
-
-    def get_formats(self, url):
-        opciones = {"quiet": True, "skip_download": True}
-
-        try:
-            with yt_dlp.YoutubeDL(opciones) as ydl:
-                info = ydl.extract_info(url, download=False)
-                formats = info.get("formats", [])
-
-                alturas = set()
-                for f in formats:
-                    height = f.get("height")
-                    has_video = f.get("vcodec") != "none"
-                    if has_video and height:
-                        alturas.add(height)
-
-                resultado = []
-                for height in sorted(alturas, reverse=True):
-                    resultado.append(
-                        {
-                            "label": f"{height}p",
-                            "format_id": f"bestvideo[height<={height}]+bestaudio/best[height<={height}]",
-                            "height": height,
-                        }
-                    )
-
-                resultado.insert(
-                    0,
-                    {
-                        "label": "Mejor calidad",
-                        "format_id": "bestvideo+bestaudio/best",
-                        "height": 9999,
-                    },
-                )
-
-                return resultado
-
-        except Exception as e:
-            print("Error obteniendo formatos:", e)
-            return []
 
     def download_playlist(
         self, url, folder, fmt, start=1, end=None, callback_progress=None
@@ -138,7 +128,7 @@ class Downloader:
         self.downloading = True
         self.folder = folder
         self.failed = []
-        self.callback_progress = callback_progress  
+        self.callback_progress = callback_progress
 
         ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
 
@@ -160,7 +150,7 @@ class Downloader:
             "fragment_retries": 10,
             "sleep_interval": 2,
             "continuedl": True,
-            "quiet": True,       
+            "quiet": True,
             "no_warnings": True,
         }
 
